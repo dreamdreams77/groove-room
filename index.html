@@ -53,6 +53,12 @@
   .modes button.sel.funk{border-color:var(--amber);color:var(--amber-bright);box-shadow:0 0 14px rgba(232,161,58,.3) inset}
   .modes button.sel.acoustic{border-color:var(--wood);color:var(--wood-bright);box-shadow:0 0 14px rgba(196,140,90,.3) inset}
   .modes button.sel.country{border-color:#e8d060;color:#e8d060;box-shadow:0 0 14px rgba(232,208,96,.3) inset}
+  .modes button.sel.ambient{border-color:#60d0e8;color:#80e8ff;box-shadow:0 0 14px rgba(96,208,232,.3) inset}
+  .modes button.sel.industrial{border-color:#e84040;color:#ff6060;box-shadow:0 0 14px rgba(232,64,64,.3) inset}
+  .modes button.sel.orchestral{border-color:#c8a8e8;color:#ddc8ff;box-shadow:0 0 14px rgba(200,168,232,.3) inset}
+  .modes button.sel.latin{border-color:#60e8a0;color:#80ffb8;box-shadow:0 0 14px rgba(96,232,160,.3) inset}
+  .modes button.sel.edm{border-color:#ff60c8;color:#ff80d8;box-shadow:0 0 14px rgba(255,96,200,.3) inset}
+  .modes button.sel.bebop{border-color:#e8b060;color:#ffc880;box-shadow:0 0 14px rgba(232,176,96,.3) inset}
 
   #viz{flex:0 0 auto;height:15vh;min-height:90px;position:relative}
   canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -114,7 +120,13 @@
   body.t-synth { --mode-accent:var(--violet);--mode-glow:rgba(138,123,255,.3)}
   body.t-funk  { --mode-accent:var(--amber-bright);--mode-glow:rgba(232,161,58,.3)}
   body.t-acoustic{--mode-accent:var(--wood-bright);--mode-glow:rgba(196,140,90,.3)}
-  body.t-country{--mode-accent:#e8d060;--mode-glow:rgba(232,208,96,.3)}
+  body.t-country  {--mode-accent:#e8d060;--mode-glow:rgba(232,208,96,.3)}
+  body.t-ambient  {--mode-accent:#60d0e8;--mode-glow:rgba(96,208,232,.3)}
+  body.t-industrial{--mode-accent:#ff6060;--mode-glow:rgba(255,96,96,.3)}
+  body.t-orchestral{--mode-accent:#ddc8ff;--mode-glow:rgba(200,168,232,.3)}
+  body.t-latin    {--mode-accent:#60e8a0;--mode-glow:rgba(96,232,160,.3)}
+  body.t-edm      {--mode-accent:#ff80d8;--mode-glow:rgba(255,96,200,.3)}
+  body.t-bebop    {--mode-accent:#ffc880;--mode-glow:rgba(232,176,96,.3)}
   .pianoPanel{border-top-color:var(--mode-accent,var(--amber-bright)) !important}
   .play{background:linear-gradient(135deg,var(--mode-accent,var(--amber-bright)),var(--mag)) !important}
 
@@ -285,6 +297,12 @@
   <button id="mFunk" onclick="setMode('funk')">🎸 Funk</button>
   <button id="mAcoustic" onclick="setMode('acoustic')">🪕 Acoustic</button>
   <button id="mCountry" onclick="setMode('country')">🤠 Country</button>
+  <button id="mAmbient" onclick="setMode('ambient')">🌊 Ambient</button>
+  <button id="mIndustrial" onclick="setMode('industrial')">🤖 Industrial</button>
+  <button id="mOrchestral" onclick="setMode('orchestral')">🎻 Orchestral</button>
+  <button id="mLatin" onclick="setMode('latin')">🌴 Latin</button>
+  <button id="mEdm" onclick="setMode('edm')">⚡ EDM</button>
+  <button id="mBebop" onclick="setMode('bebop')">🎺 Bebop</button>
 </div>
 
 <div id="viz"><canvas id="c"></canvas></div>
@@ -435,8 +453,13 @@ const TRACK_LABELS={
   funk:['Kick','Snare','Hat','Bass','Stab','Rhythm'],
   acoustic:['Kick','Snare','Shaker','Bass','Strum','Pluck'],
   country:['Kick','Snare','Hat','Shuffle','Bass','Steel'],
+  ambient:['Sub','Pad','Shimmer','Bell','Texture','Swell'],
+  industrial:['Slam','Metal','Grind','Glitch','Bass','Arp'],
+  orchestral:['Timp','Strings','Brass','Pizz','Melody','Swell'],
+  latin:['Clave','Conga','Shaker','Marimba','Bass','Nylon'],
+  edm:['Kick','Open HH','Clap','Sub','Lead','Arp'],
+  bebop:['Kick','Brush','Ride','Bass','Chord','Melody'],
 };
-/* which tracks are pitched (key-choosable) vs fixed drums */
 const PITCHED={
   jazz:[false,false,false,false,true,true],
   chip:[true,true,false,true,true],
@@ -444,6 +467,12 @@ const PITCHED={
   funk:[false,false,false,true,true,true],
   acoustic:[false,false,false,true,true,true],
   country:[false,false,false,false,true,true],
+  ambient:[true,true,true,true,true,true],    // all pitched, no drums
+  industrial:[false,false,false,false,true,true],
+  orchestral:[false,true,true,true,true,true],
+  latin:[false,false,false,true,true,true],
+  edm:[false,false,false,true,true,true],
+  bebop:[false,false,false,true,true,true],
 };
 
 /* 16 selectable keys across two octaves (C major-ish chromatic-lite) */
@@ -459,6 +488,12 @@ let pitchIdx={
   funk:[0,0,0,2,9,7],
   acoustic:[0,0,0,3,9,12],
   country:[0,0,0,0,0,4],
+  ambient:[0,7,12,14,4,9],
+  industrial:[0,0,0,0,0,7],
+  orchestral:[0,0,7,3,9,7],
+  latin:[0,0,0,9,0,4],
+  edm:[0,0,0,0,11,7],
+  bebop:[0,0,0,3,9,12],
 };
 
 /* patterns */
@@ -521,6 +556,60 @@ const PATTERNS={
                [1,0,1,0,1,0,0,1,0,1,0,0,1,0,1,0],
                [1,0,0,0,0,0,1,0,0,1,0,0,1,0,0,0]],
   },
+  ambient:{
+    // Slow evolving — sparse triggers for long pads and bells
+    drift:[[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0],
+           [0,0,0,0,1,0,0,0,0,0,0,0,0,0,1,0],[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+           [0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],
+    pulse:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0],
+           [0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
+           [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]],
+  },
+  industrial:{
+    // Hard, mechanical, dark
+    machine:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,0,0,1,1,0,1,0,1,0,0,1,1,0,0,1],
+             [0,0,1,1,0,0,1,1,0,0,1,1,0,0,1,1],[1,0,0,0,1,0,0,0,1,0,0,0,1,1,0,0],
+             [1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1]],
+    grinder:[[1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0],[0,1,0,0,1,0,0,1,0,1,0,0,1,0,0,1],
+             [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[1,0,0,0,0,1,0,0,1,0,0,0,0,1,0,0],
+             [1,0,1,0,0,0,1,0,1,0,1,0,0,0,0,1],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,1]],
+  },
+  orchestral:{
+    // Cinematic — sparse dramatic hits
+    epic:[[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1],
+          [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0],
+          [1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0],[0,0,1,0,0,0,0,0,0,0,0,1,0,0,0,0]],
+    march:[[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+           [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1],[1,0,0,1,0,1,0,0,1,0,0,1,0,1,0,0],
+           [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0]],
+  },
+  latin:{
+    // Bossa nova — clave, congas, gentle
+    bossa:[[1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0],[0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0],
+           [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,1,0,0,0,1,0,0,0,0,1,0,0,0,0],
+           [1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],[0,0,0,1,0,1,0,0,0,0,1,0,0,1,0,0]],
+    salsa:[[1,0,0,0,1,0,1,0,0,1,0,0,1,0,0,0],[0,1,0,0,0,1,0,0,1,0,0,0,0,1,0,0],
+           [1,1,1,0,1,1,1,0,1,1,1,0,1,1,1,0],[0,0,1,0,0,1,0,1,0,0,1,0,0,1,0,0],
+           [1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],[0,0,1,0,1,0,0,1,0,0,1,0,1,0,0,0]],
+  },
+  edm:{
+    // Four-on-floor EDM — hard kick every beat
+    fourOnFloor:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+                 [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,0,1,0,0,1,0,1,0,0,1,0,0,1,0],
+                 [1,0,0,0,0,1,0,0,0,1,0,0,1,0,0,0],[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0]],
+    drop:[[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
+          [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1],[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+          [1,1,0,1,0,1,1,0,1,1,0,1,0,1,1,0],[0,0,1,0,0,1,0,0,0,0,1,0,0,1,0,1]],
+  },
+  bebop:{
+    // Jazz bebop — loose ride, sparse kick, walking bass
+    walkingBass:[[1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
+                 [1,0,1,1,0,1,1,0,1,0,1,1,0,1,1,0],[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+                 [0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1],[1,0,0,1,0,1,0,0,1,0,0,0,1,0,0,1]],
+    swing:[[1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0],[0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+           [1,0,1,1,0,1,0,1,1,0,1,1,0,1,0,1],[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
+           [0,0,0,1,0,0,1,0,0,0,0,1,0,0,1,0],[1,0,0,0,1,0,0,1,0,0,1,0,0,0,0,1]],
+  },
 };
 const PATTERN_BUTTONS={
   jazz:[['fusion','Jazz fusion'],['halfTime','Half-time']],
@@ -529,6 +618,12 @@ const PATTERN_BUTTONS={
   funk:[['classic','Classic funk'],['breakbeat','Breakbeat']],
   acoustic:[['fingerstyle','Fingerstyle'],['campfire','Campfire']],
   country:[['honkyTonk','Honky Tonk'],['trainBeat','Train Beat']],
+  ambient:[['drift','Drift'],['pulse','Pulse']],
+  industrial:[['machine','Machine'],['grinder','Grinder']],
+  orchestral:[['epic','Epic'],['march','March']],
+  latin:[['bossa','Bossa Nova'],['salsa','Salsa']],
+  edm:[['fourOnFloor','Four on Floor'],['drop','Drop']],
+  bebop:[['walkingBass','Walking Bass'],['swing','Swing']],
 };
 
 /* ================================================================
@@ -907,7 +1002,8 @@ function exportMIDI(){
     return (parseInt(m[2])+1)*12+NOTE[m[1]];
   }
 
-  const DRUM_MAP={Kick:36,Snare:38,Hat:42,Ride:51,Noise:42,Clap:39,Shuffle:44,Shaker:82};
+  const DRUM_MAP={Kick:36,Snare:38,Hat:42,Ride:51,Noise:42,Clap:39,Shuffle:44,Shaker:82,
+    Slam:36,Metal:57,Grind:42,Glitch:37,Timp:41,Brush:38,Clave:75,Conga:64,'Open HH':46};
   const pitched=PITCHED[mode];
   const labels=TRACK_LABELS[mode];
 
@@ -1008,11 +1104,10 @@ function closeKeyModal(){document.getElementById('keyModal').classList.remove('o
 /* ---- mode switch ---- */
 function setMode(m){
   mode=m;
-  ['jazz','chip','synth','funk','acoustic','country'].forEach(k=>{
+  ['jazz','chip','synth','funk','acoustic','country','ambient','industrial','orchestral','latin','edm','bebop'].forEach(k=>{
     const btn=document.getElementById('m'+k.charAt(0).toUpperCase()+k.slice(1));
     if(btn)btn.className=(m===k)?('sel '+k):'';
   });
-  // shift theme accent colour
   document.body.className=document.body.className.replace(/\bt-\w+/g,'').trim()+' t-'+m;
   const notes={
     jazz:"Jazz fusion kit — swung and warm. Tap the Bass key to retune it.",
@@ -1021,6 +1116,12 @@ function setMode(m){
     funk:"Funk kit — pocket grooves. Retune the Bass and Stab for the riff.",
     acoustic:"Acoustic backing — fingerstyle bass, strum, and pluck. Retune the Strum for a new key.",
     country:"Country kit — kick on 1+3, crack snare on 2+4. Retune Bass and Steel.",
+    ambient:"Ambient drone — all pitched, no drums. All six tracks tunable. Good for menus and cutscenes.",
+    industrial:"Industrial — metallic, hard, distorted. Bass and Arp are pitched.",
+    orchestral:"Orchestral — strings, brass, pizzicato, timpani. All except timpani are pitched.",
+    latin:"Latin/Bossa — clave, congas, marimba, nylon guitar. Marimba, Bass and Nylon are pitched.",
+    edm:"EDM — four-on-floor kick, open hat, clap. Sub, Lead and Arp are pitched.",
+    bebop:"Bebop jazz — brushed snare, ride cymbal, walking bass. Bass, Chord and Melody are pitched.",
   };
   setNote(notes[m]);
   grid=Array.from({length:nTracks()},()=>Array(STEPS).fill(false));
@@ -1046,7 +1147,7 @@ function buildVoices(){
     Tone.Transport.swing=sw/100;Tone.Transport.swingSubdivision='16n';
   }
   if(!reverb)reverb=new Tone.Reverb({decay:1.8,wet:0.15}).connect(masterGain);
-  reverb.wet.value = (mode==='chip')?0.05 : (mode==='synth')?0.30 : (mode==='acoustic')?0.22 : 0.16;
+  reverb.wet.value = (mode==='chip')?0.05 : (mode==='synth')?0.30 : (mode==='acoustic')?0.22 : (mode==='ambient')?0.55 : (mode==='orchestral')?0.45 : (mode==='bebop')?0.25 : 0.16;
 
   if(mode==='jazz'){
     voices[0]=new Tone.MembraneSynth({pitchDecay:0.03,octaves:6,
@@ -1137,6 +1238,136 @@ function buildVoices(){
       ? new Tone.PluckSynth({attackNoise:0.3,dampening:5000,resonance:0.92}).connect(reverb)
       : new Tone.Synth({oscillator:{type:'sine'},envelope:{attack:0.02,decay:0.6,sustain:0.15,release:0.8}}).connect(reverb);
     voices[5].volume.value=-11;
+  }else if(mode==='ambient'){
+    // All pitched — long evolving pads, no drums
+    reverb.wet.value=0.55;
+    const delay=new Tone.FeedbackDelay('8n.',0.4).connect(reverb);
+    // Sub drone
+    voices[0]=new Tone.Synth({oscillator:{type:'sine'},envelope:{attack:1.5,decay:0.5,sustain:0.9,release:3.0}}).connect(delay);voices[0].volume.value=-8;
+    // Pad — wide detuned sawtooth
+    voices[1]=new Tone.PolySynth(Tone.Synth,{oscillator:{type:'sawtooth'},detune:12,
+      envelope:{attack:2.0,decay:0.5,sustain:0.8,release:4.0}}).connect(reverb);voices[1].volume.value=-16;
+    // Shimmer — high bright triangle
+    voices[2]=new Tone.Synth({oscillator:{type:'triangle'},envelope:{attack:0.8,decay:1.0,sustain:0.4,release:3.0}}).connect(delay);voices[2].volume.value=-18;
+    // Bell — metallic ping
+    voices[3]=new Tone.MetalSynth({frequency:440,envelope:{attack:0.001,decay:1.2,release:0.5},
+      harmonicity:5.1,modulationIndex:16,resonance:3000,octaves:1.5}).connect(reverb);voices[3].volume.value=-22;
+    // Texture — noise filtered to mid frequency
+    const bpA=new Tone.Filter(800,'bandpass').connect(reverb);
+    voices[4]=new Tone.NoiseSynth({noise:{type:'pink'},envelope:{attack:1.0,decay:0.5,sustain:0.3,release:2.0}}).connect(bpA);voices[4].volume.value=-28;
+    // Swell — lush chord pad
+    voices[5]=new Tone.PolySynth(Tone.Synth,{oscillator:{type:'sawtooth'},detune:8,
+      envelope:{attack:3.0,decay:0.5,sustain:0.9,release:5.0}}).connect(reverb);voices[5].volume.value=-20;
+  }else if(mode==='industrial'){
+    reverb.wet.value=0.12;
+    const dist=new Tone.Distortion(0.7).connect(reverb);
+    // Slam — hard distorted kick
+    voices[0]=new Tone.MembraneSynth({pitchDecay:0.05,octaves:8,
+      envelope:{attack:0.001,decay:0.3,sustain:0,release:0.1}}).connect(dist);voices[0].volume.value=-3;
+    // Metal hit
+    voices[1]=new Tone.MetalSynth({frequency:200,envelope:{attack:0.001,decay:0.3,release:0.1},
+      harmonicity:3.1,modulationIndex:32,resonance:2000,octaves:1.5}).connect(dist);voices[1].volume.value=-18;
+    // Grind — bandpass noise burst
+    const bpI=new Tone.Filter(3000,'bandpass').connect(dist);
+    voices[2]=new Tone.NoiseSynth({noise:{type:'white'},envelope:{attack:0.001,decay:0.12,sustain:0}}).connect(bpI);voices[2].volume.value=-16;
+    // Glitch — short high noise
+    const hfI=new Tone.Filter(8000,'highpass').connect(reverb);
+    voices[3]=new Tone.NoiseSynth({noise:{type:'white'},envelope:{attack:0.001,decay:0.04,sustain:0}}).connect(hfI);voices[3].volume.value=-20;
+    // Bass — distorted square sub
+    voices[4]=new Tone.MonoSynth({oscillator:{type:'square'},
+      filter:{Q:3,type:'lowpass'},filterEnvelope:{attack:0.005,decay:0.2,sustain:0.3,baseFrequency:80,octaves:3},
+      envelope:{attack:0.005,decay:0.25,sustain:0.4,release:0.3}}).connect(dist);voices[4].volume.value=-10;
+    // Arp — harsh sawtooth
+    voices[5]=new Tone.Synth({oscillator:{type:'sawtooth'},
+      envelope:{attack:0.001,decay:0.1,sustain:0.2,release:0.1}}).connect(dist);voices[5].volume.value=-14;
+  }else if(mode==='orchestral'){
+    reverb.wet.value=0.45;
+    // Timpani — low drum hit
+    voices[0]=new Tone.MembraneSynth({pitchDecay:0.08,octaves:4,
+      envelope:{attack:0.001,decay:0.6,sustain:0,release:0.3}}).connect(reverb);voices[0].volume.value=-6;
+    // Strings — detuned PolySynth with slow attack
+    voices[1]=new Tone.PolySynth(Tone.Synth,{oscillator:{type:'sawtooth'},detune:10,
+      envelope:{attack:0.3,decay:0.2,sustain:0.8,release:1.2}}).connect(reverb);voices[1].volume.value=-14;
+    // Brass — square wave with fast attack
+    voices[2]=new Tone.PolySynth(Tone.Synth,{oscillator:{type:'square'},
+      envelope:{attack:0.05,decay:0.1,sustain:0.7,release:0.4}}).connect(reverb);voices[2].volume.value=-16;
+    // Pizzicato — pluck
+    voices[3]=typeof Tone.PluckSynth!=='undefined'
+      ? new Tone.PluckSynth({attackNoise:0.8,dampening:4000,resonance:0.88}).connect(reverb)
+      : new Tone.Synth({oscillator:{type:'triangle'},envelope:{attack:0.001,decay:0.4,sustain:0,release:0.2}}).connect(reverb);
+    voices[3].volume.value=-12;
+    // Melody — warm flute-ish sine
+    voices[4]=new Tone.Synth({oscillator:{type:'sine'},
+      envelope:{attack:0.08,decay:0.1,sustain:0.7,release:0.6}}).connect(reverb);voices[4].volume.value=-13;
+    // Swell — full string chord
+    voices[5]=new Tone.PolySynth(Tone.Synth,{oscillator:{type:'sawtooth'},detune:14,
+      envelope:{attack:0.8,decay:0.3,sustain:0.7,release:2.0}}).connect(reverb);voices[5].volume.value=-18;
+  }else if(mode==='latin'){
+    reverb.wet.value=0.20;
+    // Clave — wooden click (short filtered noise)
+    const bpL=new Tone.Filter(2000,'bandpass').connect(reverb);
+    voices[0]=new Tone.NoiseSynth({noise:{type:'white'},envelope:{attack:0.001,decay:0.06,sustain:0}}).connect(bpL);voices[0].volume.value=-14;
+    // Conga — pitched membrane
+    voices[1]=new Tone.MembraneSynth({pitchDecay:0.05,octaves:3,
+      envelope:{attack:0.001,decay:0.3,sustain:0,release:0.1}}).connect(reverb);voices[1].volume.value=-10;
+    // Shaker — high noise
+    const hfL=new Tone.Filter(7000,'highpass').connect(reverb);
+    voices[2]=new Tone.NoiseSynth({noise:{type:'white'},envelope:{attack:0.001,decay:0.07,sustain:0}}).connect(hfL);voices[2].volume.value=-22;
+    // Marimba — bright short pluck
+    voices[3]=typeof Tone.PluckSynth!=='undefined'
+      ? new Tone.PluckSynth({attackNoise:1.0,dampening:6000,resonance:0.7}).connect(reverb)
+      : new Tone.Synth({oscillator:{type:'triangle'},envelope:{attack:0.001,decay:0.2,sustain:0,release:0.1}}).connect(reverb);
+    voices[3].volume.value=-11;
+    // Bass — warm round
+    voices[4]=new Tone.MonoSynth({oscillator:{type:'triangle'},
+      filter:{Q:1,type:'lowpass'},filterEnvelope:{attack:0.01,decay:0.25,sustain:0.4,baseFrequency:100,octaves:1.8},
+      envelope:{attack:0.01,decay:0.3,sustain:0.5,release:0.5}}).connect(reverb);voices[4].volume.value=-9;
+    // Nylon guitar — pluck
+    voices[5]=typeof Tone.PluckSynth!=='undefined'
+      ? new Tone.PluckSynth({attackNoise:0.6,dampening:3500,resonance:0.86}).connect(reverb)
+      : new Tone.Synth({oscillator:{type:'triangle'},envelope:{attack:0.005,decay:0.4,sustain:0.05,release:0.3}}).connect(reverb);
+    voices[5].volume.value=-13;
+  }else if(mode==='edm'){
+    reverb.wet.value=0.18;
+    const edDelay=new Tone.FeedbackDelay('8n',0.25).connect(reverb);
+    // Kick — hard 4-on-floor
+    voices[0]=new Tone.MembraneSynth({pitchDecay:0.05,octaves:6,
+      envelope:{attack:0.001,decay:0.5,sustain:0,release:0.1}}).connect(reverb);voices[0].volume.value=-3;
+    // Open HH — long noise
+    const hfE=new Tone.Filter(7000,'highpass').connect(reverb);
+    voices[1]=new Tone.NoiseSynth({noise:{type:'white'},envelope:{attack:0.001,decay:0.35,sustain:0}}).connect(hfE);voices[1].volume.value=-20;
+    // Clap — layered noise burst
+    voices[2]=new Tone.NoiseSynth({noise:{type:'pink'},envelope:{attack:0.002,decay:0.18,sustain:0}}).connect(reverb);voices[2].volume.value=-14;
+    // Sub bass — deep sine
+    voices[3]=new Tone.MonoSynth({oscillator:{type:'sine'},
+      filter:{Q:1,type:'lowpass'},filterEnvelope:{attack:0.02,decay:0.4,sustain:0.6,baseFrequency:60,octaves:2},
+      envelope:{attack:0.02,decay:0.3,sustain:0.7,release:0.4}}).connect(reverb);voices[3].volume.value=-7;
+    // Lead — supersaw-ish detuned
+    voices[4]=new Tone.Synth({oscillator:{type:'sawtooth'},detune:8,
+      envelope:{attack:0.01,decay:0.3,sustain:0.5,release:0.8}}).connect(edDelay);voices[4].volume.value=-13;
+    // Arp — fast staccato
+    voices[5]=new Tone.Synth({oscillator:{type:'sawtooth'},detune:4,
+      envelope:{attack:0.001,decay:0.12,sustain:0.1,release:0.05}}).connect(edDelay);voices[5].volume.value=-15;
+  }else if(mode==='bebop'){
+    reverb.wet.value=0.25;
+    // Kick — soft jazz kick
+    voices[0]=new Tone.MembraneSynth({pitchDecay:0.04,octaves:5,
+      envelope:{attack:0.001,decay:0.35,sustain:0,release:0.1}}).connect(reverb);voices[0].volume.value=-8;
+    // Brush snare — soft noise
+    voices[1]=new Tone.NoiseSynth({noise:{type:'pink'},envelope:{attack:0.004,decay:0.22,sustain:0}}).connect(reverb);voices[1].volume.value=-18;
+    // Ride — metallic sustained
+    voices[2]=new Tone.MetalSynth({frequency:350,envelope:{attack:0.001,decay:0.5,release:0.3},
+      harmonicity:5.1,modulationIndex:20,resonance:3500,octaves:1.5}).connect(reverb);voices[2].volume.value=-26;
+    // Walking bass — warm sawtooth
+    voices[3]=new Tone.MonoSynth({oscillator:{type:'sawtooth'},
+      filter:{Q:2,type:'lowpass'},filterEnvelope:{attack:0.01,decay:0.3,sustain:0.4,baseFrequency:120,octaves:2},
+      envelope:{attack:0.01,decay:0.4,sustain:0.5,release:0.5}}).connect(reverb);voices[3].volume.value=-9;
+    // Chord — jazz voicing PolySynth
+    voices[4]=new Tone.PolySynth(Tone.Synth,{oscillator:{type:'triangle'},
+      envelope:{attack:0.02,decay:0.3,sustain:0.4,release:0.6}}).connect(reverb);voices[4].volume.value=-16;
+    // Melody — warm mellow lead
+    voices[5]=new Tone.Synth({oscillator:{type:'triangle'},
+      envelope:{attack:0.03,decay:0.2,sustain:0.6,release:0.8}}).connect(reverb);voices[5].volume.value=-13;
   }
   audioReady=true;
 }
@@ -1150,9 +1381,24 @@ function chordFor(ti){
 function previewNote(ti,note){
   try{
     if(mode==='acoustic'){
-      if(ti===4)voices[4].triggerAttackRelease(chordFor(4),'4n'); // strum chord
+      if(ti===4)voices[4].triggerAttackRelease(chordFor(4),'4n');
       else pluckOrRelease(voices[ti],note,undefined,'8n');
-    }else if(ti===5){
+    }else if(mode==='ambient'){
+      if(ti===1||ti===5)voices[ti].triggerAttackRelease(chordFor(ti),'2n');
+      else if(ti===3)voices[3].triggerAttackRelease('4n'); // bell
+      else if(ti===4)voices[4].triggerAttackRelease('4n'); // texture noise
+      else voices[ti].triggerAttackRelease(note,'2n');
+    }else if(mode==='orchestral'){
+      if(ti===1||ti===2||ti===5)voices[ti].triggerAttackRelease(chordFor(ti),'4n');
+      else if(ti===3)pluckOrRelease(voices[3],note,undefined,'8n');
+      else voices[ti].triggerAttackRelease(note,'4n');
+    }else if(mode==='latin'){
+      if(ti===3||ti===5)pluckOrRelease(voices[ti],note,undefined,'8n');
+      else if(PITCHED[mode][ti])voices[ti].triggerAttackRelease(note,'8n');
+    }else if(mode==='bebop'){
+      if(ti===4)voices[4].triggerAttackRelease(chordFor(4),'8n');
+      else if(PITCHED[mode][ti])voices[ti].triggerAttackRelease(note,'8n');
+    }else if(ti===5&&mode!=='industrial'&&mode!=='edm'){
       voices[5].triggerAttackRelease(chordFor(5),'8n');
     }else if(PITCHED[mode][ti]){
       voices[ti].triggerAttackRelease(note,'8n');
@@ -1170,7 +1416,7 @@ function triggerSound(ti,time,step,accentMult){
     masterGain.gain.setValueAtTime(cur,Tone.context.currentTime+0.08);
   }
   try{
-    if(ti===5 && mode!=='acoustic' && mode!=='country'){
+    if(ti===5 && mode!=='acoustic' && mode!=='country' && mode!=='ambient' && mode!=='industrial' && mode!=='orchestral' && mode!=='latin' && mode!=='edm' && mode!=='bebop'){
       const dur=mode==='synth'?'2n':mode==='jazz'?'4n':'16n';
       voices[5].triggerAttackRelease(chordFor(5),dur,time);
     }else if(mode==='jazz'){
@@ -1196,6 +1442,49 @@ function triggerSound(ti,time,step,accentMult){
       else if(ti===3)voices[3].triggerAttackRelease('8n',time);
       else if(ti===4)voices[4].triggerAttackRelease(noteFor(4),'8n',time);
       else if(ti===5)pluckOrRelease(voices[5],noteFor(5),time,'4n');
+    }else if(mode==='ambient'){
+      // All pitched — long durations
+      const dur=ti===3?'4n':ti===0?'1n':'2n';
+      if(ti===3)voices[3].triggerAttackRelease(noteFor(3),dur,time); // bell uses metalsynth freq
+      else if(ti===4)voices[4].triggerAttackRelease('4n',time); // texture noise
+      else if(ti===5)voices[5].triggerAttackRelease(chordFor(5),'1n',time);
+      else if(ti===1)voices[1].triggerAttackRelease(chordFor(1),'2n',time);
+      else voices[ti].triggerAttackRelease(noteFor(ti),dur,time);
+    }else if(mode==='industrial'){
+      if(ti===0)voices[0].triggerAttackRelease('C1','8n',time);
+      else if(ti===1)voices[1].triggerAttackRelease('16n',time);
+      else if(ti===2)voices[2].triggerAttackRelease('16n',time);
+      else if(ti===3)voices[3].triggerAttackRelease('32n',time);
+      else if(ti===4)voices[4].triggerAttackRelease(noteFor(4),'8n',time);
+      else if(ti===5)voices[5].triggerAttackRelease(noteFor(5),'16n',time);
+    }else if(mode==='orchestral'){
+      if(ti===0)voices[0].triggerAttackRelease('C2','8n',time); // timpani
+      else if(ti===1)voices[1].triggerAttackRelease(chordFor(1),'4n',time); // strings chord
+      else if(ti===2)voices[2].triggerAttackRelease(chordFor(2),'8n',time); // brass stab
+      else if(ti===3)pluckOrRelease(voices[3],noteFor(3),time,'8n');        // pizz
+      else if(ti===4)voices[4].triggerAttackRelease(noteFor(4),'4n',time);  // melody
+      else if(ti===5)voices[5].triggerAttackRelease(chordFor(5),'2n',time); // swell
+    }else if(mode==='latin'){
+      if(ti===0)voices[0].triggerAttackRelease('8n',time);                  // clave noise
+      else if(ti===1)voices[1].triggerAttackRelease('C3','8n',time);        // conga
+      else if(ti===2)voices[2].triggerAttackRelease('16n',time);            // shaker
+      else if(ti===3)pluckOrRelease(voices[3],noteFor(3),time,'8n');        // marimba
+      else if(ti===4)voices[4].triggerAttackRelease(noteFor(4),'8n',time);  // bass
+      else if(ti===5)pluckOrRelease(voices[5],noteFor(5),time,'4n');        // nylon
+    }else if(mode==='edm'){
+      if(ti===0)voices[0].triggerAttackRelease('C1','8n',time);
+      else if(ti===1)voices[1].triggerAttackRelease('8n',time);             // open hh noise
+      else if(ti===2)voices[2].triggerAttackRelease('16n',time);            // clap noise
+      else if(ti===3)voices[3].triggerAttackRelease(noteFor(3),'4n',time);  // sub
+      else if(ti===4)voices[4].triggerAttackRelease(noteFor(4),'8n',time);  // lead
+      else if(ti===5)voices[5].triggerAttackRelease(noteFor(5),'16n',time); // arp
+    }else if(mode==='bebop'){
+      if(ti===0)voices[0].triggerAttackRelease('C1','8n',time);
+      else if(ti===1)voices[1].triggerAttackRelease('16n',time);            // brush
+      else if(ti===2)voices[2].triggerAttackRelease('16n',time);            // ride
+      else if(ti===3)voices[3].triggerAttackRelease(noteFor(3),'8n',time);  // walking bass
+      else if(ti===4)voices[4].triggerAttackRelease(chordFor(4),'8n',time); // chord
+      else if(ti===5)voices[5].triggerAttackRelease(noteFor(5),'4n',time);  // melody
     }else{
       if(ti===0)voices[0].triggerAttackRelease('C1','8n',time);
       else if(ti===1)voices[1].triggerAttackRelease('16n',time);
