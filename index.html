@@ -67,6 +67,13 @@
   .keybtn .pitch{display:block;font-weight:bold;color:var(--amber-bright);font-size:13px}
   .keybtn:active{transform:scale(.95)}
   .keybtn.drum{opacity:.55;cursor:default}
+  /* mute / solo buttons on each track row */
+  .ms-col{display:flex;flex-direction:column;gap:2px;flex:0 0 auto}
+  .ms-btn{width:18px;height:14px;font-family:inherit;font-size:8px;font-weight:bold;
+    border-radius:3px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);
+    color:var(--ink-dim);cursor:pointer;line-height:1;padding:0}
+  .ms-btn.m-on{background:#c04030;border-color:#c04030;color:#fff}
+  .ms-btn.s-on{background:var(--mode-accent,var(--amber));border-color:var(--mode-accent,var(--amber));color:#000}
   .cells{display:grid;grid-template-columns:repeat(16,1fr);gap:3px;flex:1}
   .cell{aspect-ratio:1;border-radius:5px;background:var(--cell);cursor:pointer;
     border:1px solid rgba(255,255,255,.04);transition:transform .05s,box-shadow .1s}
@@ -145,6 +152,19 @@
 
   /* ── TAP TEMPO flash ── */
   #tapBtn.flash{background:rgba(255,196,107,.25);border-color:var(--amber-bright);color:var(--amber-bright)}
+
+  /* ── METRONOME / TRANSPOSE / BPM PRESETS / SCALE LOCK ── */
+  .feat-row{display:flex;align-items:center;gap:6px;justify-content:center;flex-wrap:wrap}
+  .feat-row span{font-size:11px;color:var(--ink-dim)}
+  .fbtn{font-family:inherit;font-size:11px;padding:5px 10px;border-radius:14px;cursor:pointer;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:var(--ink-dim)}
+  .fbtn.sel,.fbtn.on{border-color:var(--mode-accent,var(--amber));color:var(--mode-accent,var(--amber));
+    box-shadow:0 0 8px var(--mode-glow,rgba(232,161,58,.25)) inset}
+  .fbtn:active{transform:scale(.95)}
+  .trans-btn-r{font-family:inherit;font-size:13px;width:28px;height:28px;border-radius:50%;cursor:pointer;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.15);color:var(--ink-dim);
+    display:flex;align-items:center;justify-content:center;line-height:1}
+  .trans-btn-r:active{transform:scale(.9)}
 
   /* ── BEAT FLASH ── */
   #beatFlash{position:fixed;inset:0;z-index:50;pointer-events:none;
@@ -286,6 +306,7 @@
   </div>
   <div class="row">
     <button class="chip alt" onclick="randomFill()">✦ Surprise</button>
+    <button class="chip" onclick="undoGrid()" id="undoBtn" disabled>↶ Undo</button>
     <button class="chip" onclick="clearAll()">Clear grid</button>
     <button class="chip" onclick="openLibrary()">📂 Songs</button>
     <button class="chip" onclick="togglePiano()" id="pianoBtn">🎹 Piano</button>
@@ -296,6 +317,38 @@
     <button class="chip" id="countInBtn" onclick="toggleCountIn()">Count-in: Off</button>
     <button class="chip" id="wavBtn" onclick="exportWAV()" style="display:none">⬇ WAV</button>
     <button class="chip" onclick="exportMIDI()">⬇ MIDI</button>
+  </div>
+  <div class="row feat-row">
+    <span>Metro</span>
+    <button class="fbtn" id="metroBtn" onclick="toggleMetro()">Off</button>
+    <span style="margin-left:4px">Loop</span>
+    <button class="fbtn sel" data-lp="∞" onclick="setLoopCount('∞')">∞</button>
+    <button class="fbtn" data-lp="1" onclick="setLoopCount(1)">1×</button>
+    <button class="fbtn" data-lp="2" onclick="setLoopCount(2)">2×</button>
+    <button class="fbtn" data-lp="4" onclick="setLoopCount(4)">4×</button>
+    <button class="fbtn" data-lp="8" onclick="setLoopCount(8)">8×</button>
+  </div>
+  <div class="row feat-row">
+    <span>Transpose</span>
+    <button class="trans-btn-r" onclick="transposeAll(-12)">⬇</button>
+    <button class="trans-btn-r" onclick="transposeAll(-1)">−</button>
+    <button class="trans-btn-r" onclick="transposeAll(1)">+</button>
+    <button class="trans-btn-r" onclick="transposeAll(12)">⬆</button>
+    <span style="margin-left:4px">Scale</span>
+    <button class="fbtn sel" data-sc="all" onclick="setRoomScale('all')">All</button>
+    <button class="fbtn" data-sc="major" onclick="setRoomScale('major')">Major</button>
+    <button class="fbtn" data-sc="minor" onclick="setRoomScale('minor')">Minor</button>
+    <button class="fbtn" data-sc="pent" onclick="setRoomScale('pent')">Penta</button>
+    <button class="fbtn" data-sc="dorian" onclick="setRoomScale('dorian')">Dorian</button>
+  </div>
+  <div class="row feat-row">
+    <span>BPM</span>
+    <button class="fbtn" onclick="setRoomBPM(70)">70 ambient</button>
+    <button class="fbtn" onclick="setRoomBPM(90)">90 chill</button>
+    <button class="fbtn" onclick="setRoomBPM(110)">110 menu</button>
+    <button class="fbtn" onclick="setRoomBPM(128)">128 action</button>
+    <button class="fbtn" onclick="setRoomBPM(145)">145 chase</button>
+    <button class="fbtn" onclick="setRoomBPM(170)">170 boss</button>
   </div>
   <div class="row">
     <div class="tempo"><span>vol</span>
@@ -313,6 +366,7 @@
     </div>
   </div>
   <div class="note" id="note">Tap squares to write a beat. Tap a row's key on the left to change its note.</div>
+  <div style="text-align:center;font-size:9px;color:var(--ink-dim);opacity:0.4;padding-bottom:1px;letter-spacing:.04em">Space: play · R: record · M: metro · P: perf</div>
   <div class="reclink" id="reclink"></div>
   <div class="credit">made by L.J for A.C</div>
 </div>
@@ -352,6 +406,10 @@
     <div class="lib-list" id="libList"></div>
     <div class="lib-actions">
       <button class="chip" onclick="libLoad()">↺ Load</button>
+      <button class="chip" onclick="libRename()">✏️ Rename</button>
+      <button class="chip" onclick="libExportAll()">⬇ Export All</button>
+      <button class="chip" onclick="document.getElementById('libImportFile').click()">⬆ Import</button>
+      <input type="file" id="libImportFile" accept=".json" style="display:none" onchange="libImport(event)">
       <button class="chip" onclick="closeLibrary()">Done</button>
     </div>
   </div>
@@ -473,9 +531,38 @@ const PATTERN_BUTTONS={
   country:[['honkyTonk','Honky Tonk'],['trainBeat','Train Beat']],
 };
 
+/* ================================================================
+   UNDO — snapshot before any destructive grid edit
+================================================================ */
+let undoStack=[];
+const UNDO_MAX=20;
+function gridSnapshot(){
+  undoStack.push(grid.map(r=>r.slice()));
+  if(undoStack.length>UNDO_MAX)undoStack.shift();
+  document.getElementById('undoBtn').disabled=false;
+}
+function undoGrid(){
+  if(!undoStack.length)return;
+  grid=undoStack.pop();
+  if(!undoStack.length)document.getElementById('undoBtn').disabled=true;
+  buildGrid();
+  setNote('Undid last change.');
+}
+
+/* ================================================================
+   MUTE / SOLO — per-track state
+================================================================ */
+let trackMute={}, trackSolo={};
+function initMuteSolo(){
+  const n=nTracks();
+  trackMute[mode]=Array(n).fill(false);
+  trackSolo[mode]=Array(n).fill(false);
+}
+
 /* ---- sequencer UI ---- */
 const seq=document.getElementById('seq');
 function buildGrid(){
+  if(!trackMute[mode])initMuteSolo();
   seq.innerHTML='';
   for(let ti=0;ti<nTracks();ti++){
     const row=document.createElement('div');row.className='track';
@@ -489,6 +576,20 @@ function buildGrid(){
       kb.innerHTML=`<span class="nm">${TRACK_LABELS[mode][ti]}</span><span class="pitch">●</span>`;
     }
     row.appendChild(kb);
+
+    // mute / solo buttons
+    const ms=document.createElement('div');ms.className='ms-col';
+    const mBtn=document.createElement('button');
+    mBtn.className='ms-btn'+(trackMute[mode][ti]?' m-on':'');
+    mBtn.textContent='M';mBtn.title='Mute';
+    mBtn.onclick=e=>{e.stopPropagation();trackMute[mode][ti]=!trackMute[mode][ti];mBtn.classList.toggle('m-on',trackMute[mode][ti]);};
+    const sBtn=document.createElement('button');
+    sBtn.className='ms-btn'+(trackSolo[mode][ti]?' s-on':'');
+    sBtn.textContent='S';sBtn.title='Solo';
+    sBtn.onclick=e=>{e.stopPropagation();trackSolo[mode][ti]=!trackSolo[mode][ti];sBtn.classList.toggle('s-on',trackSolo[mode][ti]);};
+    ms.appendChild(mBtn);ms.appendChild(sBtn);
+    row.appendChild(ms);
+
     const cells=document.createElement('div');
     cells.className='cells';
     cells.style.gridTemplateColumns=`repeat(${STEPS},1fr)`;
@@ -500,6 +601,7 @@ function buildGrid(){
       else if(val)c.classList.add('on');
       c.dataset.t=ti;c.dataset.i=i;
       c.onclick=()=>{
+        gridSnapshot();
         const cur=grid[ti][i];
         if(!cur){
           grid[ti][i]=true;c.classList.add('on');c.classList.remove('accent');
@@ -527,12 +629,14 @@ function buildPatternButtons(){
 }
 function loadPattern(name){
   const p=PATTERNS[mode][name];
+  gridSnapshot();
   for(let i=0;i<nTracks();i++){grid[i]=(p[i]||[]).map(v=>!!v);
     while(grid[i].length<STEPS)grid[i].push(false);}
   buildGrid();
 }
-function clearAll(){grid=Array.from({length:nTracks()},()=>Array(STEPS).fill(false));buildGrid();}
+function clearAll(){gridSnapshot();grid=Array.from({length:nTracks()},()=>Array(STEPS).fill(false));buildGrid();}
 function randomFill(){
+  gridSnapshot();
   for(let i=0;i<nTracks();i++){
     grid[i]=Array(STEPS).fill(false).map((_,s)=>{
       if(i===0)return (s%4===0)||Math.random()<0.18;
@@ -555,12 +659,15 @@ let libSelectedIdx=-1;
 function libGetAll(){try{return JSON.parse(localStorage.getItem(LIB_KEY)||'[]');}catch(e){return[];}}
 function libSave(){
   const title=document.getElementById('songTitle').value.trim()||'Untitled groove';
+  if(!trackMute[mode])initMuteSolo();
   const entry={
     title,mode,bpm:+document.getElementById('bpm').value,
     swing:+document.getElementById('swing').value,
     steps:STEPS,
     grid:grid.map(r=>r.slice()),
     pitch:pitchIdx[mode].slice(),
+    mute:trackMute[mode].slice(),
+    solo:trackSolo[mode].slice(),
     ts:Date.now()
   };
   const songs=libGetAll();
@@ -576,12 +683,21 @@ function libSave(){
 function libLoad(){
   const songs=libGetAll();
   if(libSelectedIdx<0||!songs[libSelectedIdx]){setNote('Select a song first');return;}
+  // stop playback before swapping state
+  if(playing){
+    playing=false;playBtn.textContent='▶';
+    if(typeof Tone!=='undefined')Tone.Transport.stop();
+    if(repeatId!=null){Tone.Transport.clear(repeatId);repeatId=null;}
+    stopMetro();clearPlayhead();
+  }
   const s=songs[libSelectedIdx];
   setMode(s.mode);
   STEPS=s.steps||16;
   document.querySelectorAll('.sbtn[data-s]').forEach(b=>b.classList.toggle('sel',+b.dataset.s===STEPS));
   grid=s.grid.map(r=>r.slice());
   pitchIdx[s.mode]=s.pitch.slice();
+  if(s.mute){trackMute[s.mode]=s.mute.slice();}
+  if(s.solo){trackSolo[s.mode]=s.solo.slice();}
   document.getElementById('bpm').value=s.bpm;
   document.getElementById('bpmv').textContent=s.bpm;
   if(typeof Tone!=='undefined')Tone.Transport.bpm.value=s.bpm;
@@ -626,6 +742,45 @@ function openLibrary(){
   document.getElementById('libModal').classList.add('open');
 }
 function closeLibrary(){document.getElementById('libModal').classList.remove('open');}
+
+function libRename(){
+  const songs=libGetAll();
+  if(libSelectedIdx<0||!songs[libSelectedIdx]){setNote('Select a song to rename');return;}
+  const newTitle=document.getElementById('songTitle').value.trim();
+  if(!newTitle){setNote('Enter a new name first');return;}
+  songs[libSelectedIdx].title=newTitle;
+  localStorage.setItem(LIB_KEY,JSON.stringify(songs));
+  setNote('Renamed to "'+newTitle+'"');
+  renderLibList();
+}
+function libExportAll(){
+  const songs=libGetAll();
+  const blob=new Blob([JSON.stringify(songs,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download='groove-room-songs.json';a.click();
+}
+function libImport(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      const arr=Array.isArray(data)?data:[data];
+      const songs=libGetAll();
+      arr.forEach(s=>{
+        if(!s.title)s.title='Imported';
+        const idx=songs.findIndex(x=>x.title===s.title);
+        if(idx>=0)songs[idx]=s; else songs.unshift(s);
+      });
+      localStorage.setItem(LIB_KEY,JSON.stringify(songs));
+      renderLibList();
+      setNote('Imported '+arr.length+' song'+(arr.length===1?'':'s'));
+    }catch(ex){setNote('Import failed — invalid file');}
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
 
 /* ================================================================
    SHARE URL — encode current groove into URL param
@@ -836,12 +991,12 @@ function openKeyModal(ti){
   SCALE.forEach((note,idx)=>{
     const b=document.createElement('button');b.textContent=note;
     if(idx===pitchIdx[mode][ti])b.classList.add('cur');
+    if(!roomNoteInScale(note))b.style.opacity='0.25';
     b.onclick=()=>{
       pitchIdx[mode][ti]=idx;
       [...g.children].forEach(c=>c.classList.remove('cur'));b.classList.add('cur');
       if(audioReady)previewNote(ti,note);
-      buildGrid(); // refresh the key label
-      // keep modal open so they can audition several
+      buildGrid();
       openKeyModal(ti);
     };
     g.appendChild(b);
@@ -1057,30 +1212,47 @@ function pluckOrRelease(voice,note,time,dur){
 }
 
 /* ---- transport ---- */
-let playing=false,curStep=0,repeatId=null;
+let playing=false,curStep=0,repeatId=null,loopStep=0;
 const playBtn=document.getElementById('playBtn');
 playBtn.onclick=async()=>{
   if(typeof Tone==='undefined'){setNote("Sound still loading… tap again in a second.");return;}
   if(!audioReady){await Tone.start();buildVoices();}
   playing=!playing;
   if(playing){
-    playBtn.textContent='⏸';curStep=0;
+    playBtn.textContent='⏸';curStep=0;loopStep=0;
     Tone.Transport.bpm.value=+document.getElementById('bpm').value;
     repeatId=Tone.Transport.scheduleRepeat(tick,'16n');
     Tone.Transport.start();
+    if(metroOn)startMetro();
   }else{
     playBtn.textContent='▶';Tone.Transport.stop();
     if(repeatId!=null){Tone.Transport.clear(repeatId);repeatId=null;}
+    stopMetro();
     clearPlayhead();
   }
 };
 function tick(time){
   const step=curStep%STEPS;
+  const anySolo=trackSolo[mode]&&trackSolo[mode].some(v=>v);
   for(let i=0;i<nTracks();i++){
+    if(trackMute[mode]&&trackMute[mode][i])continue;
+    if(anySolo&&!(trackSolo[mode]&&trackSolo[mode][i]))continue;
     const val=grid[i][step];
     if(val)triggerSound(i,time,step,val==='accent'?1.5:1);
   }
   Tone.Draw.schedule(()=>movePlayhead(step),time);
+  // loop count check at end of pattern
+  if(step===STEPS-1&&loopCount!=='∞'){
+    loopStep++;
+    if(loopStep>=loopCount){
+      Tone.Draw.schedule(()=>{
+        playing=false;playBtn.textContent='▶';
+        Tone.Transport.stop();
+        if(repeatId!=null){Tone.Transport.clear(repeatId);repeatId=null;}
+        stopMetro();clearPlayhead();
+      },time);
+    }
+  }
   curStep++;
 }
 function movePlayhead(step){
@@ -1185,7 +1357,93 @@ function draw(){
   requestAnimationFrame(draw);
 }
 
-/* ---- KEY STRIP — shows current pitch of each pitched track ---- */
+/* ================================================================
+   METRONOME CLICK TRACK
+================================================================ */
+let metroOn=false, metroRepeatId=null;
+function toggleMetro(){
+  metroOn=!metroOn;
+  const btn=document.getElementById('metroBtn');
+  btn.textContent=metroOn?'On':'Off';
+  btn.classList.toggle('on',metroOn);
+  if(metroOn&&playing) startMetro();
+  else stopMetro();
+}
+function startMetro(){
+  if(metroRepeatId!=null)return;
+  if(typeof Tone==='undefined'||!audioReady)return;
+  metroRepeatId=Tone.Transport.scheduleRepeat(time=>{
+    const step=curStep%STEPS; // align with sequencer
+    const isDownbeat=step%4===0;
+    const osc=Tone.context.createOscillator();
+    const g=Tone.context.createGain();
+    osc.frequency.value=isDownbeat?1200:880;
+    g.gain.setValueAtTime(isDownbeat?0.25:0.15,time);
+    g.gain.exponentialRampToValueAtTime(0.001,time+0.05);
+    osc.connect(g);g.connect(Tone.context.destination);
+    osc.start(time);osc.stop(time+0.06);
+  },'16n');
+}
+function stopMetro(){
+  if(metroRepeatId!=null){Tone.Transport.clear(metroRepeatId);metroRepeatId=null;}
+}
+
+/* ================================================================
+   LOOP COUNT — play N times then stop (∞ = forever)
+================================================================ */
+let loopCount='∞', loopPlaysLeft=0;
+function setLoopCount(n){
+  loopCount=n;
+  document.querySelectorAll('.fbtn[data-lp]').forEach(b=>b.classList.toggle('sel',b.dataset.lp===String(n)));
+}
+
+/* ================================================================
+   TRANSPOSE — shift all pitched tracks ±semitones
+================================================================ */
+function transposeAll(semitones){
+  const pitched=PITCHED[mode];
+  const labels=TRACK_LABELS[mode];
+  for(let ti=0;ti<labels.length;ti++){
+    if(!pitched[ti])continue;
+    const cur=pitchIdx[mode][ti];
+    pitchIdx[mode][ti]=Math.max(0,Math.min(SCALE.length-1,cur+semitones));
+  }
+  buildGrid();
+  setNote('Transposed '+(semitones>0?'+':'')+semitones+' semitones');
+}
+
+/* ================================================================
+   SCALE LOCK — dim out-of-scale notes in key picker
+================================================================ */
+let roomScaleLock='all';
+const ROOM_SCALE_INTERVALS={
+  all:[0,1,2,3,4,5,6,7,8,9,10,11],
+  major:[0,2,4,5,7,9,11],
+  minor:[0,2,3,5,7,8,10],
+  pent:[0,2,4,7,9],
+  dorian:[0,2,3,5,7,9,10],
+};
+function setRoomScale(sc){
+  roomScaleLock=sc;
+  document.querySelectorAll('.fbtn[data-sc]').forEach(b=>b.classList.toggle('sel',b.dataset.sc===sc));
+}
+function roomNoteInScale(noteName){
+  if(roomScaleLock==='all')return true;
+  const NOTE={'C':0,'C#':1,'D':2,'D#':3,'E':4,'F':5,'F#':6,'G':7,'G#':8,'A':9,'A#':10,'B':11};
+  const m=noteName.match(/^([A-G]#?)/);
+  if(!m)return true;
+  return ROOM_SCALE_INTERVALS[roomScaleLock].includes(NOTE[m[1]]%12);
+}
+
+/* ================================================================
+   BPM PRESETS
+================================================================ */
+function setRoomBPM(val){
+  document.getElementById('bpm').value=val;
+  document.getElementById('bpmv').textContent=val;
+  if(typeof Tone!=='undefined')Tone.Transport.bpm.value=val;
+  setNote('BPM → '+val);
+}
 function buildKeyStrip(){
   const strip=document.getElementById('keyStrip');
   if(!strip)return;
@@ -1227,6 +1485,22 @@ function togglePerf(){
   perfOn=!perfOn;
   document.body.classList.toggle('perf',perfOn);
 }
+
+/* ================================================================
+   KEYBOARD SHORTCUTS
+================================================================ */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  const k = e.key.toLowerCase();
+  // Space — play/stop
+  if (e.key === ' ') { e.preventDefault(); playBtn.click(); return; }
+  // R — record
+  if (k === 'r') { toggleRecord(); return; }
+  // P — performance mode
+  if (k === 'p') { togglePerf(); return; }
+  // M — toggle metronome
+  if (k === 'm') { toggleMetro(); return; }
+});
 
 /* ---- boot ---- */
 setMode('jazz');resize();draw();
